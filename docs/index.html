@@ -37,6 +37,13 @@
   .top nav{margin-left:auto;display:flex;gap:18px;font-size:12.5px;letter-spacing:.06em}
   .top nav a{color:var(--mut);text-decoration:none}
   .top nav a:hover{color:var(--thread)}
+  @media (max-width:720px){
+    .top nav{display:none}
+    .top .wrap{height:52px}
+    .hero{padding:34px 0 26px}
+    h1{font-size:44px}
+    section{padding:32px 0}
+  }
 
   /* ---------- hero ---------- */
   .hero{display:grid;grid-template-columns:1.15fr .85fr;gap:36px;align-items:center;padding:64px 0 48px}
