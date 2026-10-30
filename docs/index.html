@@ -55,7 +55,7 @@
 
   /* ---------- the punched card ---------- */
   .card-art{
-    position:relative;aspect-ratio:4/3;border-radius:10px;padding:22px 20px;
+    position:relative;border-radius:10px;padding:22px 20px 26px;
     background:
       radial-gradient(circle at 12px 12px, var(--paper) 3.4px, transparent 3.6px) 0 0/24px 24px,
       linear-gradient(180deg,#f6efdf,#e9dfc9);
@@ -68,9 +68,11 @@
     opacity:.5;
   }
   .card-art .tag{font:600 10px/1 var(--mono);letter-spacing:.24em;text-transform:uppercase;color:#6b5f49}
-  .card-art pre{margin:12px 0 0;font:12.5px/1.65 var(--mono);color:#2a2318;white-space:pre-wrap}
+  .card-art pre{position:relative;z-index:2;margin:12px 0 0;padding:12px 14px;border-radius:7px;
+    background:rgba(247,241,229,.94);box-shadow:0 1px 0 rgba(0,0,0,.06);
+    font:12.5px/1.65 var(--mono);color:#2a2318;white-space:pre-wrap}
   .card-art pre b{color:#a4432f;font-weight:600}
-  .card-art .corner{position:absolute;right:14px;bottom:12px;font:10px/1 var(--mono);color:#7b6d54;letter-spacing:.12em}
+  .card-art .corner{position:absolute;right:14px;bottom:10px;z-index:2;font:10px/1 var(--mono);color:#7b6d54;letter-spacing:.12em}
 
   /* ---------- sections ---------- */
   section{padding:44px 0;border-top:1px solid var(--line)}

@@ -2,10 +2,15 @@
   "name": "app-jacquard",
   "version": "1.0.0",
   "private": true,
-  "description": "Jacquard — the loom you program: a Weft-8 8-bit assembler and VM for the browser.",
+  "description": "Jacquard \u2014 the loom you program: a Weft-8 8-bit assembler and VM for the browser.",
   "scripts": {
-    "test": "node test-node.js"
+    "test": "node test-node.js && node tests/page-smoke.js",
+    "test:engine": "node test-node.js",
+    "test:page": "node tests/page-smoke.js"
   },
   "dependencies": {},
-  "license": "SEE LICENSE IN LICENSE"
+  "license": "SEE LICENSE IN LICENSE",
+  "devDependencies": {
+    "jsdom": "^29.1.1"
+  }
 }

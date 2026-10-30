@@ -19,8 +19,12 @@ jobs:
       - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020   # was @v4
         with:
           node-version: "20"
+      - name: Install the test-only dependency (jsdom drives the page)
+        run: npm install --no-audit --no-fund
       - name: The machine — encoding, opcodes, branches, flags, stack, assembler
         run: node test-node.js
+      - name: The page — boot it, click the real buttons, read the real DOM
+        run: node tests/page-smoke.js
       - name: The app ships what it says it ships
         run: |
           set -euo pipefail

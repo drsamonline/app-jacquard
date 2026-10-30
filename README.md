@@ -4,15 +4,15 @@
 
 **The loom you program — an 8-bit machine you can hold in your head.**
 
-[![Live demo](https://img.shields.io/badge/live-drsamonline.github.io%2Fapp--jacquard-d98324
-[![Test](https://img.shields.io/github/actions/workflow/status/drsamonline/app-jacquard/test.yml
-[![Build + deploy](https://img.shields.io/github/actions/workflow/status/drsamonline/app-jacquard/build-apps.yml
-[![Release](https://img.shields.io/github/v/release/drsamonline/app-jacquard
-[![Licence](https://img.shields.io/badge/licence-PolyForm%20Noncommercial%201.0.0-3f7a52
-[![Offline](https://img.shields.io/badge/network-none-3f7a52
-[![No dependencies](https://img.shields.io/badge/dependencies-0-d98324
+[![Live demo](https://img.shields.io/badge/live-drsamonline.github.io%2Fapp--jacquard-d98324?style=flat-square&labelColor=1a1610)](https://drsamonline.github.io/app-jacquard/)
+[![Test](https://img.shields.io/github/actions/workflow/status/drsamonline/app-jacquard/test.yml?branch=main&style=flat-square&label=tests&labelColor=1a1610)](https://github.com/drsamonline/app-jacquard/actions/workflows/test.yml)
+[![Build + deploy](https://img.shields.io/github/actions/workflow/status/drsamonline/app-jacquard/build-apps.yml?branch=main&style=flat-square&label=build&labelColor=1a1610)](https://github.com/drsamonline/app-jacquard/actions/workflows/build-apps.yml)
+[![Release](https://img.shields.io/github/v/release/drsamonline/app-jacquard?style=flat-square&labelColor=1a1610&color=d98324)](https://github.com/drsamonline/app-jacquard/releases/latest)
+[![Licence](https://img.shields.io/badge/licence-PolyForm%20Noncommercial%201.0.0-3f7a52?style=flat-square&labelColor=1a1610)](LICENSE)
+[![Offline](https://img.shields.io/badge/network-none-3f7a52?style=flat-square&labelColor=1a1610)](#-what-it-refuses-to-do)
+[![No runtime dependencies](https://img.shields.io/badge/runtime%20deps-0-d98324?style=flat-square&labelColor=1a1610)](package.json)
 
-[**Open the loom →**](https://drsamonline.github.io/app-jacquard/) · [Reference card](https://drsamonline.github.io/app-jacquard/play/ · [What it refuses](#-what-it-refuses-to-do) · [Tests](#-the-proof)
+[**Open the loom →**](https://drsamonline.github.io/app-jacquard/) · [Reference card](https://drsamonline.github.io/app-jacquard/play/#card) · [What it refuses](#-what-it-refuses-to-do) · [Tests](#-the-proof)
 
 </div>
 
@@ -47,7 +47,7 @@ done:   HLT
 |---|---|
 | [The machine](#-the-machine) | the ISA, the flags, the memory map |
 | [What a program looks like](#-what-a-program-looks-like) | `leave-now`, end to end |
-| [The proof](#-the-proof) | 102 assertions, and how they were checked to bite |
+| [The proof](#-the-proof) | 118 assertions: 102 for the engine, 16 that drive the page |
 | [What it refuses to do](#-what-it-refuses-to-do) | the failure behaviour, asserted not promised |
 | [Run it](#-run-it) | from a USB stick, a laptop, a phone |
 | [One honest note on the count](#-one-honest-note-on-the-count) | 27 opcodes, not 28 |
@@ -100,7 +100,8 @@ that lights up the instruction the program counter is standing on.
 ## The proof
 
 ```
-node test-node.js      # 102 assertions, no dependencies
+node test-node.js          # 102 assertions, no dependencies — the engine
+node tests/page-smoke.js   # 16 assertions — the page, driven in jsdom
 ```
 
 The tests run the **real** engine — `docs/play/weft8.js`, the same file the page loads. Nothing is mocked
@@ -116,6 +117,12 @@ except the peripherals, which are callbacks by design.
 - every refusal in the assembler, with the line number it refuses on
 - **the page itself**: that it loads the engine, that its script parses, and that every example it offers
   assembles on the machine it ships
+
+And `tests/page-smoke.js` boots the real page in jsdom, clicks the real buttons and reads the real DOM: run,
+step, reset, the weave strip, the device sliders reaching the machine, and a program that does not assemble
+being refused instead of run. That test exists because a page bug no engine test could see — `vm.h` where it
+should have been `vm.peripherals`, which made **Assemble & run** throw — shipped once and was caught only by
+driving the page. jsdom is a **test-only** dependency; the app has none.
 
 **Checked to bite**, not just to pass: rewrite `JL` to test `Z` and two branch traces fail; suppress
 `CMP`'s borrow and the carry assertion fails.
