@@ -1,0 +1,11 @@
+{
+  "name": "app-jacquard",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Jacquard — the loom you program: a Weft-8 8-bit assembler and VM for the browser.",
+  "scripts": {
+    "test": "node test-node.js"
+  },
+  "dependencies": {},
+  "license": "SEE LICENSE IN LICENSE"
+}

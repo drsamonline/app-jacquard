@@ -4,39 +4,280 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Jacquard — the loom you program</title>
-<meta name="description" content="Write Weft-8 assembly against your device's sensors: an 8-bit assembler, a VM you can watch and a reference card that teaches registers, flags, the stack and memory-mapped peripherals. Offline, no accounts.">
-<meta name="theme-color" content="#0f1115">
+<meta name="description" content="Write Weft-8 assembly against your device's sensors: an 8-bit assembler, a VM you can watch, and a reference card that teaches registers, flags, the stack and memory-mapped peripherals. Offline, no accounts.">
+<meta name="theme-color" content="#12100c">
 <style>
-  :root{--bg:#0f1115;--card:#171a21;--ink:#e7e9ee;--mut:#9aa3b2;--line:#252a34;--acc:#22c55e}
+  :root{
+    --ink:#0e0c08; --slate:#15130e; --panel:#1c1913; --line:#2e2a20;
+    --paper:#f2e9d8; --paper-ink:#1a1610; --paper-line:#d9cdb4;
+    --thread:#d98324; --thread-dim:#8a5720; --warp:#3f7a52; --mut:#9c9384;
+    --mono:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;
+    --serif:"Iowan Old Style","Palatino Linotype",Palatino,Georgia,serif;
+  }
   *{box-sizing:border-box}
-  body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.65 system-ui,-apple-system,Segoe UI,Roboto,sans-serif}
-  main{max-width:640px;margin:0 auto;padding:56px 20px}
-  h1{font-size:30px;margin:0 0 6px;letter-spacing:-.02em}
-  p{color:var(--mut)}
-  a.go{display:inline-block;margin-top:18px;background:var(--acc);color:#06210f;text-decoration:none;font-weight:600;padding:12px 18px;border-radius:12px}
-  ul{color:var(--mut);padding-left:20px}
-  code{background:var(--card);border:1px solid var(--line);border-radius:6px;padding:1px 5px;font-size:14px}
-  footer{max-width:640px;margin:0 auto;padding:24px 20px;color:var(--mut);font-size:13px}
+  html,body{margin:0}
+  body{
+    background:
+      radial-gradient(1200px 500px at 15% -10%, #241f15 0%, transparent 60%),
+      repeating-linear-gradient(90deg, #100e0a 0 2px, #0e0c08 2px 6px);
+    color:#e9e2d4;
+    font:15px/1.6 var(--mono);
+    -webkit-font-smoothing:antialiased;
+  }
+  a{color:var(--thread)}
+  .wrap{max-width:1180px;margin:0 auto;padding:0 20px}
+
+  /* ---------- masthead ---------- */
+  header.top{border-bottom:1px solid var(--line);background:rgba(14,12,8,.75);backdrop-filter:blur(6px);position:sticky;top:0;z-index:5}
+  .top .wrap{display:flex;align-items:center;gap:14px;height:58px}
+  .mark{width:26px;height:26px;border:1px solid var(--thread);border-radius:5px;position:relative;flex:0 0 auto}
+  .mark:before,.mark:after{content:"";position:absolute;inset:5px;border:1px solid var(--thread-dim)}
+  .mark:after{inset:9px;border-color:var(--thread)}
+  .brand{font:600 14px/1 var(--mono);letter-spacing:.22em;text-transform:uppercase}
+  .top nav{margin-left:auto;display:flex;gap:18px;font-size:12.5px;letter-spacing:.06em}
+  .top nav a{color:var(--mut);text-decoration:none}
+  .top nav a:hover{color:var(--thread)}
+
+  /* ---------- hero ---------- */
+  .hero{display:grid;grid-template-columns:1.15fr .85fr;gap:36px;align-items:center;padding:64px 0 48px}
+  @media (max-width:880px){.hero{grid-template-columns:1fr;padding:40px 0 30px}}
+  .kicker{font-size:12px;letter-spacing:.28em;text-transform:uppercase;color:var(--thread);margin:0 0 14px}
+  h1{font:400 clamp(44px,7vw,76px)/0.95 var(--serif);margin:0 0 18px;letter-spacing:-.02em}
+  h1 em{font-style:normal;color:var(--thread);text-shadow:0 0 32px rgba(217,131,36,.25)}
+  .lede{font:16px/1.7 var(--mono);color:#c9c0ae;max-width:52ch;margin:0 0 26px}
+  .lede strong{color:#efe6d3;font-weight:600}
+  .cta{display:flex;gap:12px;flex-wrap:wrap;align-items:center}
+  .btn{display:inline-block;padding:13px 20px;border-radius:8px;text-decoration:none;font-weight:600;letter-spacing:.02em;
+       background:var(--thread);color:#160f05;border:1px solid var(--thread)}
+  .btn:hover{filter:brightness(1.08)}
+  .btn.ghost{background:transparent;color:#e9e2d4;border:1px solid var(--line)}
+  .btn.ghost:hover{border-color:var(--thread);color:var(--thread)}
+
+  /* ---------- the punched card ---------- */
+  .card-art{
+    position:relative;aspect-ratio:4/3;border-radius:10px;padding:22px 20px;
+    background:
+      radial-gradient(circle at 12px 12px, var(--paper) 3.4px, transparent 3.6px) 0 0/24px 24px,
+      linear-gradient(180deg,#f6efdf,#e9dfc9);
+    box-shadow:0 24px 60px rgba(0,0,0,.55), inset 0 0 0 1px #cfc2a6;
+    color:var(--paper-ink);overflow:hidden;
+  }
+  .card-art:after{
+    content:"";position:absolute;left:0;right:0;top:56%;height:26px;
+    background:repeating-linear-gradient(90deg,transparent 0 10px, rgba(63,122,82,.55) 10px 12px, transparent 12px 22px);
+    opacity:.5;
+  }
+  .card-art .tag{font:600 10px/1 var(--mono);letter-spacing:.24em;text-transform:uppercase;color:#6b5f49}
+  .card-art pre{margin:12px 0 0;font:12.5px/1.65 var(--mono);color:#2a2318;white-space:pre-wrap}
+  .card-art pre b{color:#a4432f;font-weight:600}
+  .card-art .corner{position:absolute;right:14px;bottom:12px;font:10px/1 var(--mono);color:#7b6d54;letter-spacing:.12em}
+
+  /* ---------- sections ---------- */
+  section{padding:44px 0;border-top:1px solid var(--line)}
+  h2{font:400 clamp(24px,3.4vw,34px)/1.15 var(--serif);margin:0 0 8px;letter-spacing:-.01em}
+  .sub{color:var(--mut);margin:0 0 26px;max-width:70ch}
+  .grid3{display:grid;grid-template-columns:repeat(3,1fr);gap:14px}
+  @media (max-width:880px){.grid3{grid-template-columns:1fr}}
+  .tile{border:1px solid var(--line);border-radius:10px;padding:18px;background:linear-gradient(180deg,#191611,#141210)}
+  .tile h3{margin:0 0 6px;font:600 13px/1.3 var(--mono);letter-spacing:.08em;text-transform:uppercase;color:var(--thread)}
+  .tile p{margin:0;color:#bdb4a3;font-size:13.5px}
+  .num{font:400 30px/1 var(--serif);color:#efe6d3;display:block;margin-bottom:10px}
+  .num small{font:600 11px/1 var(--mono);color:var(--mut);letter-spacing:.16em;margin-left:8px}
+
+  .split{display:grid;grid-template-columns:1fr 1fr;gap:18px;align-items:start}
+  @media (max-width:880px){.split{grid-template-columns:1fr}}
+  .panel{border:1px solid var(--line);border-radius:10px;background:#141210;overflow:hidden}
+  .panel .bar{display:flex;gap:6px;align-items:center;padding:9px 12px;border-bottom:1px solid var(--line);background:#181510}
+  .dot{width:8px;height:8px;border-radius:50%;background:#3a3428}
+  .dot.r{background:#a4432f}.dot.y{background:#b8892f}.dot.g{background:#3f7a52}
+  .panel .name{margin-left:8px;font:11px/1 var(--mono);letter-spacing:.16em;color:var(--mut);text-transform:uppercase}
+  pre.code{margin:0;padding:16px;font:12.5px/1.7 var(--mono);color:#dcd3c2;overflow:auto}
+  pre.code .c{color:#6d6455}
+  pre.code .k{color:var(--thread)}
+  pre.code .o{color:#8fb98f}
+  ul.plain{margin:0;padding-left:18px;color:#bdb4a3;font-size:13.5px}
+  ul.plain li{margin:7px 0}
+  ul.plain b{color:#efe6d3;font-weight:600}
+
+  table.ref{width:100%;border-collapse:collapse;font-size:13px}
+  table.ref th{text-align:left;padding:8px 10px;color:var(--mut);font:600 11px/1 var(--mono);letter-spacing:.14em;text-transform:uppercase;border-bottom:1px solid var(--line)}
+  table.ref td{padding:8px 10px;border-bottom:1px solid #201c15;color:#cfc6b4}
+  table.ref td:first-child{color:var(--thread);font-weight:600}
+  .note{border-left:2px solid var(--thread);padding:10px 0 10px 16px;color:#bdb4a3;font-size:13.5px;margin:22px 0 0}
+
+  footer{border-top:1px solid var(--line);padding:26px 0 44px;color:var(--mut);font-size:12.5px;display:flex;gap:16px;flex-wrap:wrap;align-items:center}
+  footer .sep{opacity:.4}
 </style>
 </head>
 <body>
-<main>
-  <h1>Jacquard</h1>
-  <p>Automation with an honest machine under it: a fictional 8-bit CPU, the <strong>Weft-8</strong>,
-  programmed in assembly. The clock, the calendar, the clipboard, the accelerometer and the notifier are
-  memory-mapped peripherals — you read a register, you act on it.</p>
-  <ul>
-    <li>27 instructions, each exactly two bytes, little-endian, on a real 16-register machine</li>
-    <li>an assembler with labels, <code>.str</code> and <code>.byte</code>, and errors that name the line</li>
-    <li>run, step, and watch the registers, the four flags and scratch RAM change</li>
-    <li>a reference card that teaches registers, flags, the stack and memory-mapped I/O by use</li>
-    <li>no network, no account, no telemetry — the machine is on this device</li>
-  </ul>
-  <a class="go" href="play/">Open Jacquard</a>
-  <p style="margin-top:22px">A program that does not assemble is refused with the line and the reason,
-  never run half-way. A runaway loop stops at the step limit and says so. A stack underflow is an error,
-  not a crash.</p>
-</main>
-<footer>Built with web-kit · © 2026 Dr Sohil Momin · PolyForm Noncommercial 1.0.0</footer>
+
+<header class="top">
+  <div class="wrap">
+    <span class="mark" aria-hidden="true"></span>
+    <span class="brand">Jacquard</span>
+    <nav>
+      <a href="#machine">the machine</a>
+      <a href="#card">reference card</a>
+      <a href="#honest">what it refuses</a>
+      <a href="play/">open the loom →</a>
+    </nav>
+  </div>
+</header>
+
+<div class="wrap">
+
+  <div class="hero">
+    <div>
+      <p class="kicker">Weft-8 · an 8-bit machine you can hold</p>
+      <h1>The loom<br>you <em>program</em>.</h1>
+      <p class="lede">Automation usually hides behind coloured boxes. Jacquard puts a real machine
+      underneath it: <strong>sixteen registers</strong>, four flags, and instructions that are
+      exactly <strong>two bytes</strong> — the clock, the calendar, the clipboard and the accelerometer
+      are memory-mapped peripherals you read like any other byte.</p>
+      <p class="cta">
+        <a class="btn" href="play/">Open the loom</a>
+        <a class="btn ghost" href="#card">Read the reference card</a>
+      </p>
+    </div>
+
+    <div class="card-art" aria-hidden="true">
+      <span class="tag">punched card · program 01</span>
+      <pre>  <b>IN</b>   OFFICE_INSIDE
+  <b>CMP</b>  R0, R15
+  <b>JNZ</b>  done
+  <b>IN</b>   NEXT_EVENT_MIN
+  <b>MOV</b>  R1, R0
+  <b>LDI</b>  10
+  <b>CMP</b>  R1, R2
+  <b>JG</b>   done
+  <b>OUT</b>  NOTIFY</pre>
+      <span class="corner">16 × 2 bytes</span>
+    </div>
+  </div>
+
+  <section id="machine">
+    <h2>A machine small enough to keep in your head</h2>
+    <p class="sub">Nothing is hidden behind a framework. The engine is one file, and the page you
+    are looking at runs the same file the tests run.</p>
+    <div class="grid3">
+      <div class="tile">
+        <span class="num">27<small>opcodes</small></span>
+        <h3>Two bytes each</h3>
+        <p>Opcode, then operand, little-endian. Register pairs pack into one byte as
+        <code>a&lt;&lt;4 | b</code>, so <code>ADD R12, R5</code> is literally <code>04 C5</code>.</p>
+      </div>
+      <div class="tile">
+        <span class="num">256<small>bytes of address space</small></span>
+        <h3>A map you can memorise</h3>
+        <p>Program ROM at <code>0x00</code>, scratch RAM at <code>0x80</code>, peripherals from
+        <code>0xC0</code>. Writing into ROM is refused, and the machine says so.</p>
+      </div>
+      <div class="tile">
+        <span class="num">4<small>flags</small></span>
+        <h3>Signed, properly</h3>
+        <p>Z, C, N and V are all set, and <code>JG</code>/<code>JL</code> use N against V — so
+        <code>-1 &lt; 1</code> even though <code>255 &gt; 1</code>.</p>
+      </div>
+    </div>
+  </section>
+
+  <section>
+    <h2>What a program looks like</h2>
+    <p class="sub">This is <code>leave-now</code>, the example that ships with the app: notify ten
+    minutes before the next event, unless you are already at the office. It runs against the
+    simulated device in the page, and the test suite proves all four of its branches.</p>
+    <div class="split">
+      <div class="panel">
+        <div class="bar"><span class="dot r"></span><span class="dot y"></span><span class="dot g"></span><span class="name">leave-now.asm</span></div>
+<pre class="code"><span class="c">; R0 is the accumulator:
+; LDI, IN and LOAD all fill it.</span>
+        <span class="k">IN</span>  OFFICE_INSIDE
+        <span class="k">CMP</span> R0, R15      <span class="c">; R15 is 0</span>
+        <span class="k">JNZ</span> done         <span class="c">; already there</span>
+        <span class="k">IN</span>  NEXT_EVENT_MIN
+        <span class="k">MOV</span> R1, R0       <span class="c">; minutes left</span>
+        <span class="k">LDI</span> 10
+        <span class="k">MOV</span> R2, R0       <span class="c">; ten</span>
+        <span class="k">CMP</span> R1, R2
+        <span class="k">JG</span>  done         <span class="c">; too early</span>
+        <span class="k">LDI</span> 1
+        <span class="k">OUT</span> NOTIFY       <span class="o">; leave now</span>
+done:   <span class="k">HLT</span></pre>
+      </div>
+      <div class="panel">
+        <div class="bar"><span class="dot r"></span><span class="dot y"></span><span class="dot g"></span><span class="name">what the page shows you</span></div>
+<pre class="code">registers   R0  1     R1  6     R2  10
+flags       Z · C · N · V        <span class="o">(none set)</span>
+output      <span class="o">NOTIFY 1</span>
+bytes       00 C3 0C F0 0F C4 01 04
+            00 0A 01 20 0C 12 10 A1
+            00 01 17 C5 1A 00
+
+step · run · reset      watch it happen</pre>
+      </div>
+    </div>
+    <p class="note">The reference card in the app is generated from the engine itself, so the
+    documentation cannot drift from the machine — if an instruction changes, the card changes with it.</p>
+  </section>
+
+  <section id="card">
+    <h2>The instruction set, in full</h2>
+    <p class="sub">No omissions and no "coming soon": these are all 27 instructions the Weft-8 has.</p>
+    <table class="ref">
+      <thead><tr><th>Group</th><th>Instructions</th><th>What they do</th></tr></thead>
+      <tbody>
+        <tr><td>Load</td><td>LDI · LOAD · IN</td><td>fill the accumulator from a literal, memory, or a peripheral</td></tr>
+        <tr><td>Store</td><td>STORE · OUT</td><td>write the accumulator to RAM or to a port</td></tr>
+        <tr><td>Move</td><td>MOV</td><td>copy one register into another</td></tr>
+        <tr><td>Arithmetic</td><td>ADD · SUB · CMP</td><td>8-bit wrap, with carry, overflow, zero and negative set</td></tr>
+        <tr><td>Logic</td><td>AND · OR · XOR · NOT</td><td>bitwise, no surprises</td></tr>
+        <tr><td>Shift</td><td>SHL · SHR</td><td>the bit that falls off lands in carry</td></tr>
+        <tr><td>Flow</td><td>JMP · JZ · JNZ · JG · JL · CALL · RET</td><td>signed branches and a 16-deep call stack</td></tr>
+        <tr><td>Stack</td><td>PUSH · POP</td><td>your own values, guarded against overflow and underflow</td></tr>
+        <tr><td>Housekeeping</td><td>RAND · NOP · HLT</td><td>a random byte from an injectable source, and stop</td></tr>
+      </tbody>
+    </table>
+  </section>
+
+  <section id="honest">
+    <h2>What it refuses to do</h2>
+    <p class="sub">An 8-bit machine is only useful if it is honest about its edges. Every item here is
+    asserted by the test suite, not promised by the prose.</p>
+    <div class="split">
+      <ul class="plain">
+        <li><b>A program that does not assemble is never run.</b> The error names the line and the reason:
+        an undefined label, <code>R16</code>, an immediate of 300, a program past the 128-byte ROM.</li>
+        <li><b>A runaway loop stops.</b> At the step limit, and the page says it stopped there.</li>
+        <li><b>A stack underflow is an error, not a crash.</b> <code>RET</code> on an empty stack says so.</li>
+      </ul>
+      <ul class="plain">
+        <li><b>A write into ROM is refused</b> — and reported, rather than silently doing nothing.</li>
+        <li><b>Nothing leaves the device.</b> No network, no account, no telemetry: the peripherals are
+        simulated in the page.</li>
+        <li><b>The count is honest.</b> The spec asked for 28 opcodes and listed 27; the machine has 27 and
+        the README says so instead of inventing a twenty-eighth.</li>
+      </ul>
+    </div>
+  </section>
+
+  <section>
+    <h2>Take it with you</h2>
+    <p class="sub">The whole app is one page plus two files it carries with it, so it runs from a USB
+    stick, a school laptop, or a phone with no signal.</p>
+    <p class="cta">
+      <a class="btn" href="play/">Open the loom</a>
+      <a class="btn ghost" href="https://github.com/drsamonline/app-jacquard">Source on GitHub</a>
+    </p>
+  </section>
+
+</div>
+
+<footer class="wrap">
+  <span>Built with web-kit</span><span class="sep">·</span>
+  <span>© 2026 Dr Sohil Momin</span><span class="sep">·</span>
+  <span>PolyForm Noncommercial 1.0.0</span><span class="sep">·</span>
+  <span>offline, no accounts, no telemetry</span>
+</footer>
+
 </body>
 </html>

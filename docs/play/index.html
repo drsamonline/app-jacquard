@@ -5,90 +5,194 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Jacquard — the loom you program</title>
 <meta name="description" content="Write Weft-8 assembly against your device's sensors: an 8-bit assembler, a VM you can watch, and a reference card that teaches registers, flags, the stack and memory-mapped peripherals. Offline, no accounts.">
-<meta name="theme-color" content="#0f1115">
+<meta name="theme-color" content="#12100c">
 <style>
-  :root{--bg:#0f1115;--card:#171a21;--ink:#e7e9ee;--mut:#9aa3b2;--line:#252a34;--acc:#22c55e;--warn:#f59e0b;--bad:#ef4444}
+  :root{
+    --ink:#0e0c08; --panel:#17140f; --panel2:#1d1913; --line:#2e2a20;
+    --paper:#f4ecdc; --paper-2:#eadfc8; --paper-ink:#1a1610; --paper-line:#d6c9ae;
+    --thread:#d98324; --thread-dim:#8a5720; --warp:#3f7a52; --bad:#b4432f; --mut:#9c9384;
+    --mono:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;
+    --serif:"Iowan Old Style","Palatino Linotype",Palatino,Georgia,serif;
+  }
   *{box-sizing:border-box}
-  body{margin:0;background:var(--bg);color:var(--ink);font:15px/1.55 system-ui,-apple-system,Segoe UI,Roboto,sans-serif}
-  header,main,footer{max-width:1120px;margin:0 auto;padding:18px}
-  h1{margin:0;font-size:24px;letter-spacing:-.01em}
-  h2{font-size:15px;text-transform:uppercase;letter-spacing:.08em;color:var(--mut);margin:0 0 10px}
-  .mut{color:var(--mut)}
-  .grid{display:grid;grid-template-columns:1fr 1fr;gap:14px}
-  @media (max-width:900px){.grid{grid-template-columns:1fr}}
-  .card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:14px}
-  textarea{width:100%;height:330px;background:#0b0d12;color:#dbe3ef;border:1px solid var(--line);border-radius:10px;
-    padding:10px;font:13px/1.5 ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;tab-size:8;resize:vertical}
-  button{background:var(--acc);color:#06210f;border:0;border-radius:9px;padding:9px 13px;font-weight:600;cursor:pointer}
-  button.ghost{background:transparent;color:var(--ink);border:1px solid var(--line);font-weight:500}
-  button:disabled{opacity:.5;cursor:not-allowed}
-  select,input[type=text]{background:#0b0d12;color:var(--ink);border:1px solid var(--line);border-radius:9px;padding:8px}
-  .row{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-bottom:10px}
-  pre{margin:0;background:#0b0d12;border:1px solid var(--line);border-radius:10px;padding:10px;overflow:auto;
-    font:12.5px/1.5 ui-monospace,Menlo,Consolas,monospace;max-height:220px}
-  .regs{display:grid;grid-template-columns:repeat(8,1fr);gap:6px}
-  .reg{background:#0b0d12;border:1px solid var(--line);border-radius:8px;padding:6px;text-align:center;font:12px ui-monospace,Menlo,monospace}
-  .reg b{display:block;color:var(--mut);font-weight:600;font-size:11px}
-  .reg.on{border-color:var(--acc)}
-  .flags{display:flex;gap:8px;margin:10px 0}
-  .flag{flex:1;background:#0b0d12;border:1px solid var(--line);border-radius:8px;padding:6px;text-align:center;font:12px ui-monospace,Menlo,monospace}
-  .flag.set{border-color:var(--acc);color:var(--acc)}
-  table{width:100%;border-collapse:collapse;font-size:13px}
-  th,td{text-align:left;padding:6px 8px;border-bottom:1px solid var(--line);vertical-align:top}
-  th{color:var(--mut);font-weight:600;font-size:12px;text-transform:uppercase;letter-spacing:.05em}
-  code{background:#0b0d12;border:1px solid var(--line);border-radius:5px;padding:1px 5px;font-size:12.5px}
-  .err{color:var(--bad)} .ok{color:var(--acc)} .warn{color:var(--warn)}
-  .mem{font:12px ui-monospace,Menlo,monospace;white-space:pre;overflow:auto;max-height:200px}
-  .hidden{display:none}
-  footer{color:var(--mut);font-size:13px}
+  body{
+    margin:0;color:#e9e2d4;font:14.5px/1.6 var(--mono);
+    background:
+      radial-gradient(900px 420px at 80% -8%, #251f15 0%, transparent 62%),
+      repeating-linear-gradient(90deg,#100e0a 0 2px,#0e0c08 2px 6px);
+  }
+  a{color:var(--thread)}
+  .shell{max-width:1180px;margin:0 auto;padding:0 18px 40px}
+
+  /* masthead */
+  header{display:flex;align-items:center;gap:12px;height:56px;border-bottom:1px solid var(--line);margin-bottom:18px}
+  .mark{width:22px;height:22px;border:1px solid var(--thread);border-radius:4px;position:relative}
+  .mark:before{content:"";position:absolute;inset:4px;border:1px solid var(--thread-dim)}
+  h1{font:600 13px/1 var(--mono);letter-spacing:.24em;text-transform:uppercase;margin:0}
+  .tagline{color:var(--mut);font-size:12px;letter-spacing:.04em}
+  header .right{margin-left:auto;display:flex;gap:10px;align-items:center;font-size:12px;color:var(--mut)}
+  header .right a{text-decoration:none}
+
+  .cols{display:grid;grid-template-columns:1.05fr .95fr;gap:16px;align-items:start}
+  @media (max-width:960px){.cols{grid-template-columns:1fr}}
+
+  /* the punched-card editor */
+  .loom{
+    border-radius:12px;padding:0;overflow:hidden;color:var(--paper-ink);
+    background:
+      radial-gradient(circle at 11px 11px, rgba(255,255,255,.55) 2.6px, transparent 2.8px) 0 0/22px 22px,
+      linear-gradient(180deg,var(--paper),var(--paper-2));
+    box-shadow:0 18px 44px rgba(0,0,0,.5), inset 0 0 0 1px var(--paper-line);
+  }
+  .loom .head{display:flex;align-items:center;gap:8px;padding:10px 12px;border-bottom:1px dashed var(--paper-line)}
+  .loom .head .t{font:600 10.5px/1 var(--mono);letter-spacing:.22em;text-transform:uppercase;color:#6f6350}
+  .loom .head .sp{margin-left:auto;display:flex;gap:6px;flex-wrap:wrap}
+  .loom textarea{
+    display:block;width:100%;height:322px;border:0;outline:none;resize:vertical;padding:14px;
+    background:transparent;color:var(--paper-ink);
+    font:13px/1.62 var(--mono);tab-size:8;
+  }
+  .loom .foot{display:flex;gap:10px;align-items:center;padding:9px 12px;border-top:1px dashed var(--paper-line);font-size:12px;color:#6f6350}
+  .loom .foot .grow{flex:1}
+
+  /* controls */
+  button,select{font:600 12.5px/1 var(--mono);border-radius:7px;cursor:pointer}
+  button{background:var(--thread);color:#170f05;border:1px solid var(--thread);padding:9px 12px}
+  button:hover{filter:brightness(1.08)}
+  button.ghost{background:transparent;color:#e9e2d4;border:1px solid var(--line);font-weight:500}
+  button.ghost:hover{border-color:var(--thread);color:var(--thread)}
+  .loom button.ghost{color:#4a3f2c;border-color:var(--paper-line)}
+  .loom button.ghost:hover{border-color:#a4864f;color:#2a2318}
+  select{background:#141210;color:#e9e2d4;border:1px solid var(--line);padding:8px 10px;font-weight:500}
+
+  /* the machine */
+  .machine{border:1px solid var(--line);border-radius:12px;background:linear-gradient(180deg,var(--panel),#131009);overflow:hidden}
+  .machine .head{display:flex;align-items:center;gap:8px;padding:10px 12px;border-bottom:1px solid var(--line)}
+  .machine .head .t{font:600 10.5px/1 var(--mono);letter-spacing:.22em;text-transform:uppercase;color:var(--mut)}
+  .machine .head .st{margin-left:auto;font-size:11.5px;color:var(--mut)}
+  .body{padding:12px}
+
+  /* program strip */
+  .strip{display:grid;grid-template-columns:repeat(32,1fr);gap:2px;margin-bottom:12px}
+  .strip i{display:block;height:12px;border-radius:2px;background:#241f17;border:1px solid #2c2619}
+  .strip i.b{background:#3a3020}
+  .strip i.pc{background:var(--thread);border-color:var(--thread);box-shadow:0 0 10px rgba(217,131,36,.6)}
+  .strip i.halt{background:var(--warp);border-color:var(--warp)}
+
+  .flags{display:grid;grid-template-columns:repeat(4,1fr);gap:6px;margin-bottom:10px}
+  .flag{border:1px solid var(--line);border-radius:6px;padding:6px 4px;text-align:center;font-size:11px;color:var(--mut)}
+  .flag b{display:block;font-size:13px;color:#cfc6b4}
+  .flag.set{border-color:var(--thread);color:var(--thread);background:rgba(217,131,36,.08)}
+  .flag.set b{color:var(--thread)}
+
+  .regs{display:grid;grid-template-columns:repeat(8,1fr);gap:5px}
+  .reg{border:1px solid var(--line);border-radius:6px;padding:5px 3px;text-align:center;font-size:11.5px;color:#d7cebc;background:#12100c}
+  .reg b{display:block;font:600 9.5px/1.4 var(--mono);letter-spacing:.1em;color:var(--mut)}
+  .reg span{display:block;font-size:9.5px;color:#6f6759}
+  .reg.on{border-color:var(--warp);box-shadow:inset 0 0 0 1px rgba(63,122,82,.35)}
+
+  h2.h{font:600 10.5px/1 var(--mono);letter-spacing:.2em;text-transform:uppercase;color:var(--mut);margin:16px 0 8px}
+  pre{font:12.2px/1.6 var(--mono)}
+  pre.out{margin:0;background:#0c0a07;border:1px solid var(--line);border-radius:8px;padding:10px;min-height:74px;max-height:190px;overflow:auto;color:#cfc6b4}
+  pre.bytes{margin:0;background:#0c0a07;border:1px solid var(--line);border-radius:8px;padding:10px;max-height:120px;overflow:auto;color:#a89e8c;font-size:11.5px}
+  .err{color:#e2846d}.ok{color:#8fb98f}.warn{color:#d9b45f}
+
+  /* second row */
+  .cols2{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-top:16px;align-items:start}
+  @media (max-width:960px){.cols2{grid-template-columns:1fr}}
+  .card{border:1px solid var(--line);border-radius:12px;background:linear-gradient(180deg,var(--panel2),#141109);padding:12px}
+  .card h3{font:600 10.5px/1 var(--mono);letter-spacing:.2em;text-transform:uppercase;color:var(--thread);margin:0 0 10px}
+  .dev{width:100%;border-collapse:collapse;font-size:12.5px}
+  .dev td{padding:6px 4px;border-bottom:1px solid #221d16;color:#cfc6b4;vertical-align:middle}
+  .dev td:first-child{color:var(--mut);width:46%;font-size:11.5px;letter-spacing:.04em}
+  input[type=range]{width:100%;accent-color:var(--thread)}
+  input[type=text]{width:100%;background:#0c0a07;border:1px solid var(--line);color:#e9e2d4;border-radius:6px;padding:6px 8px;font:12.5px var(--mono)}
+  input[type=checkbox]{accent-color:var(--thread);width:15px;height:15px}
+  .mem{font:11.5px/1.65 var(--mono);white-space:pre;overflow:auto;max-height:186px;color:#a89e8c;background:#0c0a07;border:1px solid var(--line);border-radius:8px;padding:10px}
+  .map{width:100%;border-collapse:collapse;font-size:12px;margin-top:8px}
+  .map td{padding:5px 4px;border-bottom:1px solid #221d16;color:#cfc6b4}
+  .map code{color:var(--thread)}
+
+  /* reference card */
+  .refwrap{margin-top:16px;border:1px solid var(--line);border-radius:12px;background:linear-gradient(180deg,var(--panel2),#141109);padding:14px}
+  .refwrap p{color:var(--mut);font-size:12.5px;margin:0 0 12px;max-width:92ch}
+  table.ref{width:100%;border-collapse:collapse;font-size:12.5px}
+  table.ref th{text-align:left;padding:7px 8px;color:var(--mut);font:600 10px/1 var(--mono);letter-spacing:.16em;text-transform:uppercase;border-bottom:1px solid var(--line)}
+  table.ref td{padding:7px 8px;border-bottom:1px solid #201c15;color:#cfc6b4;vertical-align:top}
+  table.ref td:first-child{color:var(--thread);font-weight:600;white-space:nowrap}
+  code{background:#0c0a07;border:1px solid #241f17;border-radius:4px;padding:1px 4px;font-size:11.5px;color:#d9cfbd}
+
+  footer{margin-top:22px;padding-top:16px;border-top:1px solid var(--line);color:var(--mut);font-size:11.5px;display:flex;gap:10px;flex-wrap:wrap}
 </style>
 </head>
 <body>
-<header>
-  <h1>Jacquard</h1>
-  <p class="mut">The loom you program. Write <strong>Weft-8</strong> assembly against the machine's own
-  sensors — 16 registers, four flags, two-byte instructions — and watch it run. Everything happens on
-  this device; nothing is sent anywhere.</p>
-</header>
+<div class="shell">
 
-<main>
-  <div class="grid">
-    <section class="card">
-      <h2>The loom (assembly)</h2>
-      <div class="row">
-        <select id="examples" aria-label="Example programs"></select>
+  <header>
+    <span class="mark" aria-hidden="true"></span>
+    <div>
+      <h1>Jacquard</h1>
+      <div class="tagline">the loom you program · Weft-8 · 27 instructions, two bytes each</div>
+    </div>
+    <div class="right">
+      <a href="../">about</a>
+      <span>·</span>
+      <span>offline</span>
+    </div>
+  </header>
+
+  <div class="cols">
+    <section class="loom">
+      <div class="head">
+        <span class="t">punched card · your program</span>
+        <span class="sp">
+          <select id="examples" aria-label="Example programs"></select>
+        </span>
+      </div>
+      <textarea id="src" spellcheck="false" aria-label="Weft-8 assembly source"></textarea>
+      <div class="foot">
         <button id="run">Assemble &amp; run</button>
         <button class="ghost" id="assembleOnly">Assemble only</button>
+        <span class="grow"></span>
         <button class="ghost" id="save">Save</button>
         <button class="ghost" id="load">Load</button>
         <button class="ghost" id="export">Export .asm</button>
       </div>
-      <textarea id="src" spellcheck="false" aria-label="Weft-8 assembly source"></textarea>
-      <p class="mut" id="saved" style="margin:8px 0 0"></p>
+      <div class="foot" style="border-top:0;padding-top:0">
+        <span id="saved" class="mut"></span>
+      </div>
     </section>
 
-    <section class="card">
-      <h2>The machine</h2>
-      <div class="row">
-        <button class="ghost" id="step">Step</button>
-        <button class="ghost" id="reset">Reset</button>
-        <span class="mut" id="state">idle</span>
+    <section class="machine">
+      <div class="head">
+        <span class="t">the machine</span>
+        <span class="st" id="state">idle</span>
       </div>
-      <div class="flags" id="flags"></div>
-      <div class="regs" id="regs"></div>
-      <h2 style="margin-top:14px">Output</h2>
-      <pre id="out">Nothing yet. Press “Assemble &amp; run”.</pre>
-      <h2 style="margin-top:14px">Program bytes <span class="mut" id="bytecount"></span></h2>
-      <pre id="bytes" style="max-height:110px">—</pre>
+      <div class="body">
+        <div class="strip" id="strip" aria-hidden="true"></div>
+        <div class="flags" id="flags"></div>
+        <div class="regs" id="regs"></div>
+
+        <h2 class="h">output</h2>
+        <pre class="out" id="out">Nothing yet. Press “Assemble &amp; run”.</pre>
+
+        <h2 class="h">program bytes <span id="bytecount" style="color:#6f6759;letter-spacing:0"></span></h2>
+        <pre class="bytes" id="bytes">—</pre>
+
+        <div class="foot" style="display:flex;gap:8px;margin-top:12px">
+          <button class="ghost" id="step">Step</button>
+          <button class="ghost" id="reset">Reset</button>
+        </div>
+      </div>
     </section>
   </div>
 
-  <div class="grid" style="margin-top:14px">
+  <div class="cols2">
     <section class="card">
-      <h2>The device (peripherals)</h2>
-      <table>
+      <h3>the device — peripherals</h3>
+      <table class="dev">
         <tbody>
-          <tr><td style="width:44%"><label for="hour">CLOCK — hour</label></td>
+          <tr><td><label for="hour">CLOCK · hour</label></td>
               <td><input id="hour" type="range" min="0" max="23" value="9"> <span id="hourv">9</span></td></tr>
           <tr><td><label for="nextEvent">NEXT_EVENT_MIN</label></td>
               <td><input id="nextEvent" type="range" min="0" max="120" value="30"> <span id="nextEventv">30</span></td></tr>
@@ -96,20 +200,18 @@
               <td><input id="office" type="checkbox"> <span id="officev">not at the office</span></td></tr>
           <tr><td><label for="accel">ACCEL</label></td>
               <td><input id="accel" type="range" min="0" max="255" value="128"> <span id="accelv">128</span></td></tr>
-          <tr><td><label for="clip">CLIPBOARD (text)</label></td>
-              <td><input id="clip" type="text" value="hello" style="width:100%"></td></tr>
+          <tr><td><label for="clip">CLIPBOARD · text</label></td>
+              <td><input id="clip" type="text" value="hello"></td></tr>
         </tbody>
       </table>
-      <p class="mut" style="margin-bottom:0">These are the machine's senses. Each is one byte at a fixed
-      address, reached with <code>IN</code>/<code>OUT</code> or <code>LOAD</code>/<code>STORE</code>.
-      They are simulated here, on your device — the app makes no network request.</p>
+      <p style="color:var(--mut);font-size:12px;margin:10px 0 0">The machine's senses: one byte each at a
+      fixed address, reached with <code>IN</code>/<code>OUT</code>. Simulated here, on this device.</p>
     </section>
 
     <section class="card">
-      <h2>Scratch RAM <span class="mut">0x80 – 0xBF</span></h2>
+      <h3>scratch RAM · 0x80 – 0xBF</h3>
       <div class="mem" id="ram">—</div>
-      <h2 style="margin-top:14px">Memory map</h2>
-      <table>
+      <table class="map">
         <tbody>
           <tr><td><code>0x00–0x7F</code></td><td>program ROM — read-only while running</td></tr>
           <tr><td><code>0x80–0xBF</code></td><td>scratch RAM — 64 bytes, yours</td></tr>
@@ -119,19 +221,27 @@
     </section>
   </div>
 
-  <section class="card" style="margin-top:14px">
-    <h2>The reference card — all 27 instructions</h2>
-    <p class="mut" style="margin-top:0">Every instruction is exactly two bytes: the opcode, then the
-    operand. The operand is an 8-bit value, address or port — or two register numbers packed into one
-    byte, <code>a&lt;&lt;4 | b</code>. <strong>R0 is the accumulator</strong>: <code>LDI</code>,
-    <code>LOAD</code>, <code>IN</code> all fill it, and <code>MOV</code> moves it where you want it.</p>
-    <table id="refTable"><thead><tr><th>Instruction</th><th>Operand</th><th>Effect</th><th>Flags</th></tr></thead><tbody></tbody></table>
+  <section class="refwrap" id="card">
+    <h3 style="font:600 10.5px/1 var(--mono);letter-spacing:.2em;text-transform:uppercase;color:var(--thread);margin:0 0 10px">
+      the reference card — all 27 instructions</h3>
+    <p>Every instruction is exactly two bytes: the opcode, then the operand. The operand is an 8-bit
+    value, address or port — or two register numbers packed into one byte, <code>a&lt;&lt;4 | b</code>.
+    <strong style="color:#e9e2d4">R0 is the accumulator</strong>: <code>LDI</code>, <code>LOAD</code>
+    and <code>IN</code> all fill it, and <code>MOV</code> moves it where you want it. This table is
+    generated from the engine, so it cannot drift from the machine.</p>
+    <table class="ref" id="refTable">
+      <thead><tr><th>Instruction</th><th>Operand</th><th>Effect</th><th>Flags</th></tr></thead>
+      <tbody></tbody>
+    </table>
   </section>
-</main>
 
-<footer>
-  Built with web-kit · © 2026 Dr Sohil Momin · PolyForm Noncommercial 1.0.0 · offline, no accounts, no telemetry.
-</footer>
+  <footer>
+    <span>Built with web-kit</span><span>·</span>
+    <span>© 2026 Dr Sohil Momin</span><span>·</span>
+    <span>PolyForm Noncommercial 1.0.0</span><span>·</span>
+    <span>no network, no account, no telemetry</span>
+  </footer>
+</div>
 
 <script src="web-kit.js"></script>
 <script src="weft8.js"></script>
@@ -267,7 +377,7 @@
     labels.forEach(function (p) {
       var d = document.createElement("div");
       d.className = "flag" + (f[p[0]] ? " set" : "");
-      d.textContent = p[0] + " · " + p[1];
+      d.innerHTML = "<b>" + p[0] + "</b>" + p[1];
       $("flags").appendChild(d);
     });
   }
@@ -277,10 +387,25 @@
     box.innerHTML = "";
     for (var i = 0; i < 16; i++) {
       var d = document.createElement("div");
-      d.className = "reg" + (vm && vm.pc >= 0 && i === 0 ? " on" : "");
+      d.className = "reg" + (i === 0 ? " on" : "");
       var v = vm ? vm.r[i] : 0;
-      d.innerHTML = "<b>R" + i + "</b>" + v + "<br><span style='color:#6b7280'>0x" +
+      d.innerHTML = "<b>R" + i + "</b>" + v + "<span>0x" +
         ("0" + v.toString(16).toUpperCase()).slice(-2) + "</span>";
+      box.appendChild(d);
+    }
+  }
+
+  function renderStrip() {
+    var box = $("strip");
+    box.innerHTML = "";
+    var total = 64;                       // 64 instruction slots, drawn as a weave
+    var pcSlot = vm ? Math.floor(vm.pc / 2) : -1;
+    var n = rom ? Math.ceil(rom.length / 2) : 0;
+    for (var i = 0; i < total; i++) {
+      var d = document.createElement("i");
+      if (i < n) d.className = "b";
+      if (i === pcSlot) d.className = "pc";
+      if (vm && vm.halted && i === Math.floor(vm.pc / 2) - 1) d.className = "halt";
       box.appendChild(d);
     }
   }
@@ -307,10 +432,10 @@
         (Weft8.NAMES[op] || "?"));
     }
     $("bytes").textContent = out.join("\n");
-    $("bytecount").textContent = "— " + a.all.length + " bytes of " + (Weft8.ROM_END + 1);
+    $("bytecount").textContent = "· " + a.all.length + " of " + (Weft8.ROM_END + 1) + " bytes";
   }
 
-  function renderAll() { renderFlags(); renderRegs(); renderRam(); }
+  function renderAll() { renderFlags(); renderRegs(); renderStrip(); renderRam(); }
 
   function say(text, cls) {
     $("out").innerHTML = "";
@@ -387,7 +512,7 @@
     $("saved").textContent = okSaved
       ? "Saved on this device."
       : "Could not save — this browser's storage is full or unavailable. Your program is still in the editor; use Export .asm to keep it.";
-    $("saved").className = okSaved ? "mut" : "err";
+    $("saved").className = okSaved ? "" : "err";
   };
 
   $("load").onclick = function () {
@@ -423,7 +548,7 @@
   };
 
   renderAll();
-  $("src").oninput = function () { $("saved").textContent = ""; $("saved").className = "mut"; };
+  $("src").oninput = function () { $("saved").textContent = ""; };
 })();
 </script>
 </body>
