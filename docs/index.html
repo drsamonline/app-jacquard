@@ -1,0 +1,42 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Jacquard — the loom you program</title>
+<meta name="description" content="Write Weft-8 assembly against your device's sensors: an 8-bit assembler, a VM you can watch and a reference card that teaches registers, flags, the stack and memory-mapped peripherals. Offline, no accounts.">
+<meta name="theme-color" content="#0f1115">
+<style>
+  :root{--bg:#0f1115;--card:#171a21;--ink:#e7e9ee;--mut:#9aa3b2;--line:#252a34;--acc:#22c55e}
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.65 system-ui,-apple-system,Segoe UI,Roboto,sans-serif}
+  main{max-width:640px;margin:0 auto;padding:56px 20px}
+  h1{font-size:30px;margin:0 0 6px;letter-spacing:-.02em}
+  p{color:var(--mut)}
+  a.go{display:inline-block;margin-top:18px;background:var(--acc);color:#06210f;text-decoration:none;font-weight:600;padding:12px 18px;border-radius:12px}
+  ul{color:var(--mut);padding-left:20px}
+  code{background:var(--card);border:1px solid var(--line);border-radius:6px;padding:1px 5px;font-size:14px}
+  footer{max-width:640px;margin:0 auto;padding:24px 20px;color:var(--mut);font-size:13px}
+</style>
+</head>
+<body>
+<main>
+  <h1>Jacquard</h1>
+  <p>Automation with an honest machine under it: a fictional 8-bit CPU, the <strong>Weft-8</strong>,
+  programmed in assembly. The clock, the calendar, the clipboard, the accelerometer and the notifier are
+  memory-mapped peripherals — you read a register, you act on it.</p>
+  <ul>
+    <li>27 instructions, each exactly two bytes, little-endian, on a real 16-register machine</li>
+    <li>an assembler with labels, <code>.str</code> and <code>.byte</code>, and errors that name the line</li>
+    <li>run, step, and watch the registers, the four flags and scratch RAM change</li>
+    <li>a reference card that teaches registers, flags, the stack and memory-mapped I/O by use</li>
+    <li>no network, no account, no telemetry — the machine is on this device</li>
+  </ul>
+  <a class="go" href="play/">Open Jacquard</a>
+  <p style="margin-top:22px">A program that does not assemble is refused with the line and the reason,
+  never run half-way. A runaway loop stops at the step limit and says so. A stack underflow is an error,
+  not a crash.</p>
+</main>
+<footer>Built with web-kit · © 2026 Dr Sohil Momin · PolyForm Noncommercial 1.0.0</footer>
+</body>
+</html>

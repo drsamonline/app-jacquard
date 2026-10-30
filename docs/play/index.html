@@ -1,0 +1,430 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Jacquard — the loom you program</title>
+<meta name="description" content="Write Weft-8 assembly against your device's sensors: an 8-bit assembler, a VM you can watch, and a reference card that teaches registers, flags, the stack and memory-mapped peripherals. Offline, no accounts.">
+<meta name="theme-color" content="#0f1115">
+<style>
+  :root{--bg:#0f1115;--card:#171a21;--ink:#e7e9ee;--mut:#9aa3b2;--line:#252a34;--acc:#22c55e;--warn:#f59e0b;--bad:#ef4444}
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--ink);font:15px/1.55 system-ui,-apple-system,Segoe UI,Roboto,sans-serif}
+  header,main,footer{max-width:1120px;margin:0 auto;padding:18px}
+  h1{margin:0;font-size:24px;letter-spacing:-.01em}
+  h2{font-size:15px;text-transform:uppercase;letter-spacing:.08em;color:var(--mut);margin:0 0 10px}
+  .mut{color:var(--mut)}
+  .grid{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+  @media (max-width:900px){.grid{grid-template-columns:1fr}}
+  .card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:14px}
+  textarea{width:100%;height:330px;background:#0b0d12;color:#dbe3ef;border:1px solid var(--line);border-radius:10px;
+    padding:10px;font:13px/1.5 ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;tab-size:8;resize:vertical}
+  button{background:var(--acc);color:#06210f;border:0;border-radius:9px;padding:9px 13px;font-weight:600;cursor:pointer}
+  button.ghost{background:transparent;color:var(--ink);border:1px solid var(--line);font-weight:500}
+  button:disabled{opacity:.5;cursor:not-allowed}
+  select,input[type=text]{background:#0b0d12;color:var(--ink);border:1px solid var(--line);border-radius:9px;padding:8px}
+  .row{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-bottom:10px}
+  pre{margin:0;background:#0b0d12;border:1px solid var(--line);border-radius:10px;padding:10px;overflow:auto;
+    font:12.5px/1.5 ui-monospace,Menlo,Consolas,monospace;max-height:220px}
+  .regs{display:grid;grid-template-columns:repeat(8,1fr);gap:6px}
+  .reg{background:#0b0d12;border:1px solid var(--line);border-radius:8px;padding:6px;text-align:center;font:12px ui-monospace,Menlo,monospace}
+  .reg b{display:block;color:var(--mut);font-weight:600;font-size:11px}
+  .reg.on{border-color:var(--acc)}
+  .flags{display:flex;gap:8px;margin:10px 0}
+  .flag{flex:1;background:#0b0d12;border:1px solid var(--line);border-radius:8px;padding:6px;text-align:center;font:12px ui-monospace,Menlo,monospace}
+  .flag.set{border-color:var(--acc);color:var(--acc)}
+  table{width:100%;border-collapse:collapse;font-size:13px}
+  th,td{text-align:left;padding:6px 8px;border-bottom:1px solid var(--line);vertical-align:top}
+  th{color:var(--mut);font-weight:600;font-size:12px;text-transform:uppercase;letter-spacing:.05em}
+  code{background:#0b0d12;border:1px solid var(--line);border-radius:5px;padding:1px 5px;font-size:12.5px}
+  .err{color:var(--bad)} .ok{color:var(--acc)} .warn{color:var(--warn)}
+  .mem{font:12px ui-monospace,Menlo,monospace;white-space:pre;overflow:auto;max-height:200px}
+  .hidden{display:none}
+  footer{color:var(--mut);font-size:13px}
+</style>
+</head>
+<body>
+<header>
+  <h1>Jacquard</h1>
+  <p class="mut">The loom you program. Write <strong>Weft-8</strong> assembly against the machine's own
+  sensors — 16 registers, four flags, two-byte instructions — and watch it run. Everything happens on
+  this device; nothing is sent anywhere.</p>
+</header>
+
+<main>
+  <div class="grid">
+    <section class="card">
+      <h2>The loom (assembly)</h2>
+      <div class="row">
+        <select id="examples" aria-label="Example programs"></select>
+        <button id="run">Assemble &amp; run</button>
+        <button class="ghost" id="assembleOnly">Assemble only</button>
+        <button class="ghost" id="save">Save</button>
+        <button class="ghost" id="load">Load</button>
+        <button class="ghost" id="export">Export .asm</button>
+      </div>
+      <textarea id="src" spellcheck="false" aria-label="Weft-8 assembly source"></textarea>
+      <p class="mut" id="saved" style="margin:8px 0 0"></p>
+    </section>
+
+    <section class="card">
+      <h2>The machine</h2>
+      <div class="row">
+        <button class="ghost" id="step">Step</button>
+        <button class="ghost" id="reset">Reset</button>
+        <span class="mut" id="state">idle</span>
+      </div>
+      <div class="flags" id="flags"></div>
+      <div class="regs" id="regs"></div>
+      <h2 style="margin-top:14px">Output</h2>
+      <pre id="out">Nothing yet. Press “Assemble &amp; run”.</pre>
+      <h2 style="margin-top:14px">Program bytes <span class="mut" id="bytecount"></span></h2>
+      <pre id="bytes" style="max-height:110px">—</pre>
+    </section>
+  </div>
+
+  <div class="grid" style="margin-top:14px">
+    <section class="card">
+      <h2>The device (peripherals)</h2>
+      <table>
+        <tbody>
+          <tr><td style="width:44%"><label for="hour">CLOCK — hour</label></td>
+              <td><input id="hour" type="range" min="0" max="23" value="9"> <span id="hourv">9</span></td></tr>
+          <tr><td><label for="nextEvent">NEXT_EVENT_MIN</label></td>
+              <td><input id="nextEvent" type="range" min="0" max="120" value="30"> <span id="nextEventv">30</span></td></tr>
+          <tr><td><label for="office">OFFICE_INSIDE</label></td>
+              <td><input id="office" type="checkbox"> <span id="officev">not at the office</span></td></tr>
+          <tr><td><label for="accel">ACCEL</label></td>
+              <td><input id="accel" type="range" min="0" max="255" value="128"> <span id="accelv">128</span></td></tr>
+          <tr><td><label for="clip">CLIPBOARD (text)</label></td>
+              <td><input id="clip" type="text" value="hello" style="width:100%"></td></tr>
+        </tbody>
+      </table>
+      <p class="mut" style="margin-bottom:0">These are the machine's senses. Each is one byte at a fixed
+      address, reached with <code>IN</code>/<code>OUT</code> or <code>LOAD</code>/<code>STORE</code>.
+      They are simulated here, on your device — the app makes no network request.</p>
+    </section>
+
+    <section class="card">
+      <h2>Scratch RAM <span class="mut">0x80 – 0xBF</span></h2>
+      <div class="mem" id="ram">—</div>
+      <h2 style="margin-top:14px">Memory map</h2>
+      <table>
+        <tbody>
+          <tr><td><code>0x00–0x7F</code></td><td>program ROM — read-only while running</td></tr>
+          <tr><td><code>0x80–0xBF</code></td><td>scratch RAM — 64 bytes, yours</td></tr>
+          <tr><td><code>0xC0–0xFF</code></td><td>peripherals</td></tr>
+        </tbody>
+      </table>
+    </section>
+  </div>
+
+  <section class="card" style="margin-top:14px">
+    <h2>The reference card — all 27 instructions</h2>
+    <p class="mut" style="margin-top:0">Every instruction is exactly two bytes: the opcode, then the
+    operand. The operand is an 8-bit value, address or port — or two register numbers packed into one
+    byte, <code>a&lt;&lt;4 | b</code>. <strong>R0 is the accumulator</strong>: <code>LDI</code>,
+    <code>LOAD</code>, <code>IN</code> all fill it, and <code>MOV</code> moves it where you want it.</p>
+    <table id="refTable"><thead><tr><th>Instruction</th><th>Operand</th><th>Effect</th><th>Flags</th></tr></thead><tbody></tbody></table>
+  </section>
+</main>
+
+<footer>
+  Built with web-kit · © 2026 Dr Sohil Momin · PolyForm Noncommercial 1.0.0 · offline, no accounts, no telemetry.
+</footer>
+
+<script src="web-kit.js"></script>
+<script src="weft8.js"></script>
+<script>
+(function () {
+  "use strict";
+  var $ = function (id) { return document.getElementById(id); };
+  var store = (window.Loom && Loom.storage && Loom.storage.namespace) ? Loom.storage.namespace("jacquard") : {
+    get: function (k, d) { try { var v = localStorage.getItem("jacquard:" + k); return v === null ? d : JSON.parse(v); } catch (e) { return d; } },
+    set: function (k, v) { try { localStorage.setItem("jacquard:" + k, JSON.stringify(v)); return true; } catch (e) { return false; } }
+  };
+
+  var EXAMPLES = {
+    "leave-now": [
+      "; leave-now: notify 10 minutes before the next calendar event,",
+      "; unless you are already at the office.",
+      "; R0 is the accumulator. LDI, IN and LOAD all fill it.",
+      "",
+      "        IN  OFFICE_INSIDE",
+      "        CMP R0, R15          ; R15 is 0 here",
+      "        JNZ done             ; already there -> say nothing",
+      "        IN  NEXT_EVENT_MIN",
+      "        MOV R1, R0           ; R1 = minutes to the event",
+      "        LDI 10",
+      "        MOV R2, R0           ; R2 = 10",
+      "        CMP R1, R2",
+      "        JG  done             ; more than 10 minutes -> wait",
+      "        LDI 1",
+      "        OUT NOTIFY           ; leave now",
+      "done:   HLT"
+    ].join("\n"),
+
+    "count-to-five": [
+      "; A counted loop: R2 counts, R1 counts down from five.",
+      "        LDI 5",
+      "        MOV R1, R0",
+      "        LDI 0",
+      "        MOV R2, R0",
+      "loop:   LDI 1",
+      "        ADD R2, R0           ; R2 = R2 + 1",
+      "        LDI 1",
+      "        MOV R5, R0",
+      "        SUB R1, R5           ; R1 = R1 - 1",
+      "        JNZ loop",
+      "        MOV R3, R2",
+      "        HLT"
+    ].join("\n"),
+
+    "clock-out-loud": [
+      "; Read the clock and hand the hour to the notifier.",
+      "        LOAD CLOCK           ; R0 = the hour",
+      "        OUT  NOTIFY",
+      "        HLT"
+    ].join("\n"),
+
+    "the-stack": [
+      "; CALL pushes the return address; PUSH/POP keep your own values.",
+      "        LDI 1",
+      "        CALL twice",
+      "        LDI 9",
+      "        MOV R3, R0",
+      "        HLT",
+      "twice:  LDI 2",
+      "        MOV R4, R0",
+      "        CALL thrice",
+      "        RET",
+      "thrice: LDI 3",
+      "        MOV R5, R0",
+      "        RET"
+    ].join("\n"),
+
+    "flags-and-branches": [
+      "; Signed comparison: 0xFF is -1, and -1 is less than 1,",
+      "; even though 255 is greater than 1 unsigned.",
+      "        LDI 0xFF",
+      "        MOV R1, R0",
+      "        LDI 0x01",
+      "        MOV R2, R0",
+      "        CMP R1, R2           ; -1 - 1 : N=1, V=0",
+      "        JL  less",
+      "        LDI 0",
+      "        OUT NOTIFY           ; not less (unsigned would land here)",
+      "        HLT",
+      "less:   LDI 1",
+      "        OUT NOTIFY",
+      "        HLT"
+    ].join("\n")
+  };
+
+  /* ---- the reference card, from the engine itself ---- */
+  (function () {
+    var tb = $("refTable").getElementsByTagName("tbody")[0];
+    Weft8.REFERENCE.forEach(function (r) {
+      var tr = document.createElement("tr");
+      [r.op, r.operand || "—", r.effect, r.flags].forEach(function (c) {
+        var td = document.createElement("td");
+        td.textContent = c;
+        tr.appendChild(td);
+      });
+      tb.appendChild(tr);
+    });
+  })();
+
+  /* ---- examples ---- */
+  var sel = $("examples");
+  Object.keys(EXAMPLES).forEach(function (name) {
+    var o = document.createElement("option");
+    o.value = name; o.textContent = name;
+    sel.appendChild(o);
+  });
+  sel.onchange = function () { $("src").value = EXAMPLES[sel.value]; };
+
+  var saved = store.get("program", null);
+  $("src").value = (typeof saved === "string" && saved) ? saved : EXAMPLES["leave-now"];
+
+  /* ---- the machine ---- */
+  var vm = null, rom = null, timer = null;
+
+  function deviceOptions() {
+    return {
+      hour: +$("hour").value,
+      nextEventMin: +$("nextEvent").value,
+      officeInside: $("office").checked,
+      accel: +$("accel").value,
+      clipboard: $("clip").value || ""
+    };
+  }
+
+  function renderFlags() {
+    var f = vm ? vm.flags : { Z: false, C: false, N: false, V: false };
+    var labels = [["Z", "zero"], ["C", "carry"], ["N", "negative"], ["V", "overflow"]];
+    $("flags").innerHTML = "";
+    labels.forEach(function (p) {
+      var d = document.createElement("div");
+      d.className = "flag" + (f[p[0]] ? " set" : "");
+      d.textContent = p[0] + " · " + p[1];
+      $("flags").appendChild(d);
+    });
+  }
+
+  function renderRegs() {
+    var box = $("regs");
+    box.innerHTML = "";
+    for (var i = 0; i < 16; i++) {
+      var d = document.createElement("div");
+      d.className = "reg" + (vm && vm.pc >= 0 && i === 0 ? " on" : "");
+      var v = vm ? vm.r[i] : 0;
+      d.innerHTML = "<b>R" + i + "</b>" + v + "<br><span style='color:#6b7280'>0x" +
+        ("0" + v.toString(16).toUpperCase()).slice(-2) + "</span>";
+      box.appendChild(d);
+    }
+  }
+
+  function renderRam() {
+    if (!vm) { $("ram").textContent = "—"; return; }
+    var lines = [];
+    for (var a = 0x80; a <= 0xBF; a += 8) {
+      var row = [];
+      for (var i = 0; i < 8; i++) row.push(("0" + vm.mem[a + i].toString(16).toUpperCase()).slice(-2));
+      lines.push(("0" + a.toString(16).toUpperCase()).slice(-2) + "  " + row.join(" "));
+    }
+    $("ram").textContent = lines.join("\n");
+  }
+
+  function renderBytes(a) {
+    if (!a) { $("bytes").textContent = "—"; $("bytecount").textContent = ""; return; }
+    var out = [];
+    for (var i = 0; i < a.all.length; i += 2) {
+      var op = a.all[i], arg = a.all[i + 1];
+      out.push(("0" + (i >> 1).toString(16).toUpperCase()).slice(-2) + "  " +
+        ("0" + op.toString(16).toUpperCase()).slice(-2) + " " +
+        ("0" + (arg === undefined ? 0 : arg).toString(16).toUpperCase()).slice(-2) + "   " +
+        (Weft8.NAMES[op] || "?"));
+    }
+    $("bytes").textContent = out.join("\n");
+    $("bytecount").textContent = "— " + a.all.length + " bytes of " + (Weft8.ROM_END + 1);
+  }
+
+  function renderAll() { renderFlags(); renderRegs(); renderRam(); }
+
+  function say(text, cls) {
+    $("out").innerHTML = "";
+    var span = document.createElement("span");
+    if (cls) span.className = cls;
+    span.textContent = text;
+    $("out").appendChild(span);
+  }
+
+  function assemble() {
+    var a = Weft8.assemble($("src").value);
+    renderBytes(a);
+    if (a.errors.length) {
+      var msg = a.errors.map(function (e) {
+        return (e.line ? "line " + e.line + ": " : "") + e.message;
+      }).join("\n");
+      say(msg, "err");
+      $("state").textContent = "does not assemble";
+      return null;
+    }
+    return a;
+  }
+
+  function boot() {
+    var a = assemble();
+    if (!a) { vm = null; renderAll(); return null; }
+    rom = a.bytes;
+    vm = new Weft8.VM({ rom: rom, peripherals: Weft8.host(deviceOptions()) });
+    renderAll();
+    return vm;
+  }
+
+  $("run").onclick = function () {
+    if (timer) { clearInterval(timer); timer = null; }
+    if (!boot()) return;
+    vm.run(20000);
+    renderAll();
+    var lines = vm.h.output.slice();
+    if (vm.error) lines.push("stopped: " + vm.error);
+    else if (!vm.halted) lines.push("stopped: step limit reached");
+    else lines.push("halted after " + vm.steps + " steps");
+    say(lines.join("\n") || "halted, with nothing to say", vm.error ? "err" : "ok");
+    $("state").textContent = vm.error ? "error" : (vm.halted ? "halted" : "running");
+  };
+
+  $("assembleOnly").onclick = function () {
+    var a = assemble();
+    if (!a) { vm = null; renderAll(); return; }
+    boot();
+    say("assembled: " + a.all.length + " bytes, " + Object.keys(a.symbols).length + " labels", "ok");
+    $("state").textContent = "assembled, not run";
+  };
+
+  $("step").onclick = function () {
+    if (!vm) { if (!boot()) return; }
+    if (vm.halted) { say("the machine has halted — reset to run again", "warn"); return; }
+    vm.step();
+    renderAll();
+    var lines = vm.h.output.slice(-6);
+    if (vm.error) lines.push("error: " + vm.error);
+    lines.push("pc = 0x" + ("0" + vm.pc.toString(16).toUpperCase()).slice(-2) + ", " + vm.steps + " steps");
+    say(lines.join("\n"), vm.error ? "err" : "");
+    $("state").textContent = vm.halted ? "halted" : "paused";
+  };
+
+  $("reset").onclick = function () {
+    if (timer) { clearInterval(timer); timer = null; }
+    if (boot()) say("reset — registers, flags and RAM are zero, the program is loaded", "");
+    $("state").textContent = "idle";
+  };
+
+  $("save").onclick = function () {
+    var okSaved = store.set("program", $("src").value);
+    $("saved").textContent = okSaved
+      ? "Saved on this device."
+      : "Could not save — this browser's storage is full or unavailable. Your program is still in the editor; use Export .asm to keep it.";
+    $("saved").className = okSaved ? "mut" : "err";
+  };
+
+  $("load").onclick = function () {
+    var p = store.get("program", null);
+    if (typeof p === "string" && p) { $("src").value = p; $("saved").textContent = "Loaded the saved program."; }
+    else $("saved").textContent = "There is no saved program on this device yet.";
+  };
+
+  $("export").onclick = function () {
+    try {
+      var blob = new Blob([$("src").value], { type: "text/plain" });
+      var url = URL.createObjectURL(blob);
+      var a = document.createElement("a");
+      a.href = url;
+      a.download = (sel.value || "program") + ".asm";
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      setTimeout(function () { URL.revokeObjectURL(url); }, 1000);
+      $("saved").textContent = "Exported as a .asm file.";
+    } catch (e) {
+      $("saved").textContent = "This browser refused the download. Select the text and copy it instead.";
+      $("saved").className = "err";
+    }
+  };
+
+  /* live device readouts */
+  ["hour", "nextEvent", "accel"].forEach(function (id) {
+    $(id).oninput = function () { $(id + "v").textContent = $(id).value; };
+  });
+  $("office").onchange = function () {
+    $("officev").textContent = $("office").checked ? "at the office" : "not at the office";
+  };
+
+  renderAll();
+  $("src").oninput = function () { $("saved").textContent = ""; $("saved").className = "mut"; };
+})();
+</script>
+</body>
+</html>
