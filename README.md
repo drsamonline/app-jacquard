@@ -2,12 +2,6 @@
 
 # Jacquard
 
-<!-- shot:start -->
-
-![Screenshot](docs/shot.png)
-
-<!-- shot:end -->
-
 **The loom you program — an 8-bit machine you can hold in your head.**
 
 [![Live demo](https://img.shields.io/badge/live-drsamonline.github.io%2Fapp--jacquard-d98324?style=flat-square&labelColor=1a1610)](https://drsamonline.github.io/app-jacquard/)
