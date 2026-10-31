@@ -2,12 +2,6 @@
 
 # Jacquard
 
-<!-- shot:start -->
-
-![Screenshot](docs/shot.png)
-
-<!-- shot:end -->
-
 **The loom you program — an 8-bit machine you can hold in your head.**
 
 [![Live demo](https://img.shields.io/badge/live-drsamonline.github.io%2Fapp--jacquard-d98324?style=flat-square&labelColor=1a1610)](https://drsamonline.github.io/app-jacquard/)
@@ -161,6 +155,22 @@ from `file://` and from GitHub Pages.
 The spec asks for "a program using all **28** opcodes" and then names twenty-seven:
 `LDI MOV LOAD STORE ADD SUB AND OR XOR NOT SHL SHR CMP JMP JZ JNZ JG JL CALL RET PUSH POP IN OUT RAND NOP HLT`.
 The machine has **27**, and this README says so rather than inventing a twenty-eighth to satisfy a number.
+
+
+## The Weft-8 family
+
+One machine, seven faces. Every one of these runs `weft8.js` from the Loom, byte for byte —
+learn it once and you have learned all seven.
+
+| | what it is |
+|---|---|
+| **the Loom** (you are here) | the machine and its editor — where it all starts |
+| [Weft Puzzles](https://drsamonline.github.io/app-weft-puzzles/) | five puzzles solved in assembly, a robot on a grid |
+| [Clip Loom](https://drsamonline.github.io/app-clip-loom/) | clipboard programs you can read: strip, squeeze, wrap |
+| [Weft-8 on hardware](https://drsamonline.github.io/weft8-hardware/) | the same machine in C, three-way parity with the JS one |
+| [weft8-kit](https://drsamonline.github.io/weft8-kit/) | rules small enough to sign off |
+| [Weft-8 Classroom](https://drsamonline.github.io/weft8-classroom/) | eight exercises that teach how a computer works |
+| [Weft-8 beside x86 and ARM](https://drsamonline.github.io/weft8-compare/) | the same four jobs in three machines |
 
 ## Licence
 
