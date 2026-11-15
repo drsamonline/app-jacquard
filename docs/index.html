@@ -367,6 +367,13 @@ step · run · reset      watch it happen</pre>
     --paper: #f7f6f2;
     --mut: #5c6470;
   }
+
+/* ---- a11y: the ghost took a light ink onto a light page -------------------
+   .btn.ghost set rgb(233,226,212) unconditionally while the page behind it is
+   white in both themes: 1.29:1. The page does not change with the theme, so
+   neither does the ink. */
+.btn.ghost{color:#3f3529!important}
+code{background:#f3ead9!important;color:#3f3529!important}
 </style>
 
 <section class="support" id="support" aria-labelledby="support-h" data-support>
