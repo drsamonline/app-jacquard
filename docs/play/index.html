@@ -210,11 +210,13 @@
   @media (prefers-reduced-motion:no-preference){.support-card{transition:border-color .15s ease}}
   .support-card:target,.support-card:focus-within{border-color:var(--s-accent)}
 
-/* ---- a11y: the ghost took a light ink onto a light page -------------------
-   .btn.ghost set rgb(233,226,212) unconditionally while the page behind it is
-   white in both themes: 1.29:1. The page does not change with the theme, so
-   neither does the ink. */
-.btn.ghost,.support-open{color:#3f3529!important}
+/* ---- a11y: the ink has to be the colour of the page behind it -------------
+   This rule used to force a dark ink (#3f3529) on .btn.ghost and .support-open,
+   on the theory that the page was white. It is not: body paints #0e0c08 in BOTH
+   themes, so those controls came out at 1.63:1 - unreadable. The landing page had
+   the identical override and the fleet contrast gate caught it there on
+   2026-11-23. Both controls keep their own light ink; nothing here overrides it.
+   The code chip is a light chip on the same dark page, so its dark ink is right. */
 code{background:#f3ead9!important;color:#3f3529!important}
 </style>
 
