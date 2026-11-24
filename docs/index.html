@@ -368,11 +368,14 @@ step · run · reset      watch it happen</pre>
     --mut: #5c6470;
   }
 
-/* ---- a11y: the ghost took a light ink onto a light page -------------------
-   .btn.ghost set rgb(233,226,212) unconditionally while the page behind it is
-   white in both themes: 1.29:1. The page does not change with the theme, so
-   neither does the ink. */
-.btn.ghost{color:#3f3529!important}
+/* ---- a11y: the ghost's ink has to be the colour of the page behind it -----
+   This rule used to force a dark ink (#3f3529) on .btn.ghost, on the theory
+   that the page was white. It is not: body paints #0e0c08 in BOTH themes (the
+   light-theme block below overrides --paper and --line, not the body
+   background), so the ghost came out at 1.63:1 - unreadable, and the fleet
+   contrast gate caught it on 2026-11-23. The ghost keeps its own light ink from
+   .btn.ghost above (#e9e2d4, 15.9:1 on this page); nothing here overrides it.
+   The code chip is a light chip on the same dark page, so its dark ink is right. */
 code{background:#f3ead9!important;color:#3f3529!important}
 </style>
 

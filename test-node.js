@@ -515,6 +515,63 @@ console.log("the page — it loads the engine it is tested against");
   ok(readme.indexOf("you are here") > 0, "and marks this repository in it");
 }
 
+/* ---- the page's own ink has to be readable where the control actually sits ----
+ * The fleet contrast gate samples real pixels in a browser, and on 2026-11-23 it
+ * caught this page: .btn.ghost was given a dark ink (#3f3529) by an override that
+ * assumed a white page, while the page behind it is #0e0c08 in BOTH themes - 1.63:1,
+ * unreadable. The same override sat on docs/play/index.html for .support-open.
+ * A hand-picked ink that ignores the page behind it is the whole defect, so it is
+ * checked here, on both pages, for every control the override touched.
+ */
+{
+  const fsm = require("fs");
+
+  function rgb(hex) {
+    const h = hex.replace("#", "");
+    const full = h.length === 3 ? h.split("").map(c => c + c).join("") : h;
+    return [0, 2, 4].map(i => parseInt(full.slice(i, i + 2), 16) / 255);
+  }
+  function luminance(hex) {
+    const [r, g, b] = rgb(hex).map(v => v <= 0.03928 ? v / 12.92 : Math.pow((v + 0.055) / 1.055, 2.4));
+    return 0.2126 * r + 0.7152 * g + 0.0722 * b;
+  }
+  function contrast(a, b) {
+    const [hi, lo] = [luminance(a), luminance(b)].sort((x, y) => y - x);
+    return (hi + 0.05) / (lo + 0.05);
+  }
+
+  ["docs/index.html", "docs/play/index.html"].forEach(function (page) {
+    const html = fsm.readFileSync(page, "utf8");
+
+    // The colour the page paints: the last hex in body's background stack is the base
+    // layer, which is what text actually sits on. (body{margin:0} comes first in the
+    // reset and carries no colour, so the rule with a background is the one to read.)
+    const bodies = html.match(/body\s*\{[^}]*\}/g) || [];
+    const painted = bodies.map(b => /background\s*:([^;]*)/.exec(b)).filter(Boolean).pop();
+    const pageHexes = painted ? painted[1].match(/#[0-9a-fA-F]{3,6}/g) || [] : [];
+    const behind = pageHexes[pageHexes.length - 1];
+    ok(!!behind, page + ": the background colour it paints could be read (" + behind + ")");
+    if (!behind) return;
+
+    // The ink the browser will use: the LAST colour declared for the control wins.
+    [".btn.ghost", ".support-open"].forEach(function (selector) {
+      const escaped = selector.replace(/\./g, "\\.");
+      const rules = html.match(new RegExp(escaped + "\\s*\\{[^}]*\\}", "g")) || [];
+      const inks = [];
+      rules.forEach(function (rule) {
+        const m = /(?:^|[;{\s])color\s*:\s*(#[0-9a-fA-F]{3,6})/.exec(rule);
+        if (m) inks.push(m[1]);
+      });
+      if (!inks.length) return;                       // not used on this page
+      const ink = inks[inks.length - 1];
+      const ratio = contrast(ink, behind);
+      ok(ratio >= 4.5,
+         page + ": " + selector + " ink " + ink + " reads on " + behind +
+         " (" + ratio.toFixed(2) + ":1, needs 4.5:1)");
+    });
+  });
+}
+
 console.log("");
 console.log(pass + " passed, " + failures.length + " failed");
 if (failures.length) {
